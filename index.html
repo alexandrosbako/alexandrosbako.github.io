@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+<!-- we import arjs version without NFT but with marker + location based support -->
+<script src="https://raw.githack.com/AR-js-org/AR.js/3.0.0/aframe/build/aframe-ar.js"></script>
+<script>
+    AFRAME.registerComponent('soundhandler', {
+        init: function () {
+            this.soundEl = document.querySelector('[sound]');
+            this.marker = document.querySelector('a-marker');
+            this.image = document.querySelector('a-image'); // Get the image element
+            this.visible = false;
+            this.soundMuted = false;
+            this.infoTextVisible = false; // Add a new flag for info text visibility
+
+            // Get the mute button and add a click event listener to it
+            this.muteButton = document.getElementById('muteButton');
+            this.muteButton.addEventListener('click', this.toggleSound.bind(this));
+
+            // Get the info button and add a click event listener to it
+            this.infoButton = document.getElementById('infoButton');
+            this.infoButton.addEventListener('click', this.toggleInfo.bind(this));
+            this.infoButton.setAttribute('disabled', 'true'); // Disable the button initially
+
+            // Create a text entity to display the info message
+            this.infoText = document.createElement('a-text');
+            this.infoText.setAttribute('id', 'infoText');
+            this.infoText.setAttribute('position', '0 1.5 -2');
+            this.infoText.setAttribute('align', 'center');
+            this.infoText.setAttribute('visible', 'false');
+            this.el.appendChild(this.infoText);
+        },
+        tick: function () {
+            if (this.marker.object3D.visible && !this.visible) {
+                if (!this.soundMuted) {
+                    this.soundEl.components.sound.stopSound(); // stop if playing
+                    this.soundEl.components.sound.playSound(); // play
+                }
+                this.visible = true; // make sure it plays only once per visible
+
+                // Enable the info button when the image becomes visible
+                if (this.image && this.image.object3D.visible) {
+                    this.infoButton.removeAttribute('disabled');
+                }
+            } else if (!this.marker.object3D.visible) {
+                this.visible = false;
+
+                // Disable the info button when the marker is not visible
+                this.infoButton.setAttribute('disabled', 'true');
+
+                // Hide the info text when the marker is not visible
+                this.infoText.setAttribute('visible', 'false');
+                this.infoTextVisible = false; // Set the flag to false
+            }
+        },
+        toggleSound: function () {
+            if (this.soundMuted) {
+                this.soundEl.components.sound.playSound();
+                this.muteButton.textContent = 'Mute Sound';
+            } else {
+                this.soundEl.components.sound.pauseSound();
+                this.muteButton.textContent = 'Unmute Sound';
+            }
+            this.soundMuted = !this.soundMuted;
+        },
+        toggleInfo: function () {
+            if (this.infoTextVisible) {
+                this.infoText.setAttribute('visible', 'false');
+            } else {
+                this.loadInfoText((text) => {
+                    this.infoText.setAttribute('value', text);
+                    this.infoText.setAttribute('visible', 'true');
+                });
+            }
+            this.infoTextVisible = !this.infoTextVisible;
+        },
+        loadInfoText: function (callback) {
+            fetch('info.txt') // Assuming info.txt is in the same directory as the HTML file
+                .then((response) => response.text())
+                .then((data) => {
+                    callback(data);
+                })
+                .catch((error) => {
+                    console.error('Error loading info.txt:', error);
+                });
+        }
+    });
+</script>
+<style>
+    #info {
+        position: fixed;
+        top: 5%;
+        z-index: 1000;
+        text-align: center;
+        width: 100%;
+        margin: 0 auto;
+    }
+    /* Change the position of the button */
+    #muteButton, #infoButton {
+        position: fixed;
+        bottom: 20px; /* Adjust as needed */
+        right: 700px;
+    }
+    #infoButton {
+        position: fixed;
+        bottom: 20px; /* Adjust as needed */
+        right: 650px;
+    }
+</style>
+
+<body style="margin : 0px; overflow: hidden;">
+    <div id="info">
+        <p>Μπακοδήμος-Κοψαχείλης Αλέξανδρος</p>
+        <button id="muteButton">Mute Sound</button>
+        <button id="infoButton">Info</button>
+        <a href="https://upload.wikimedia.org/wikipedia/en/thumb/7/7f/Roberts_blossom_1924-2011.jpg/220px-Roberts_blossom_1924-2011.jpg">This is an old man</a>
+    </div>
+    <a-scene embedded arjs='sourceType: webcam; debugUIEnabled: false;' soundhandler>
+        <a-assets>
+            <audio id="sound" src="laugh.mp3" preload="auto"></audio>
+        </a-assets>
+        <a-marker preset="hiro">
+            <a-image src="png-transparent-cutout-people-s-tshirt-boy-garden-thumbnail-removebg-preview.png" position="0 1.5 1"></a-image>
+        </a-marker>
+        <a-entity sound="src: #sound" autoplay="false"></a-entity>
+    </a-scene>
+</body>
+</html>
